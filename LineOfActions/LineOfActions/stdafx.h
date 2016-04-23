@@ -17,4 +17,5 @@
 #include <string>
 #include <tuple>
 #include <memory>
+#include <algorithm>
 #include "Board.h"

@@ -1,5 +1,5 @@
 // LineOfActions.cpp : Defines the entry point for the console application.
-//
+// Minhtri Tran 2016
 
 #include "stdafx.h"
 
@@ -12,21 +12,14 @@ int main()
 {
 	bool playerIsBlack = getPlayerChoice();
 	unique_ptr<Board> board(new Board());
+
 	while (true) {
 		board->display();
 		bool validAction = false;
 		while (!validAction) {
 			tuple<int, int, int> action = getAction();
-			validAction = board->playPiece(action);
+			validAction = board->playPiece(action, playerIsBlack);
 		}
-	}
-	
-
-	try {
-		board->setTile(1, 0, 2);
-		cout << board->getTile(1, 0) << endl;
-	} catch (const invalid_argument& e) {
-		cerr << "Exception: " << e.what() << endl;
 	}
 
 	return 0;
@@ -61,25 +54,26 @@ tuple<int, int, int> getAction() {
 		col = -1;
 		direction = -1;
 		string direction_str;
-		cout << "Enter row and column of piece that you want to move (int int): ";
-		cin >> row >> col;
+		cout << "Enter row and column of piece and direction for it to move (0-" << Board::NUM_ROWS - 1 << " 0-" << Board::NUM_COLUMNS - 1;
+		cout << " u/r/d/l/ur/dr/dl/ul): ";
+		cin >> row >> col >> direction_str;
 		//check if input for row and column is valid
-		if (row == -1 || col == -1) {
+		if (row < 0 || col < 0 || row > Board::NUM_ROWS - 1 || col > Board::NUM_COLUMNS - 1) {
 			cout << "Invalid input for row/column, please try again." << endl;
 			valid = false;
 		}
 		else {
-			cout << "Enter direction of movement (u/r/d/l/ur/dr/dl/ul): ";
-			cin >> direction_str;
+			//cout << "Enter direction of movement (u/r/d/l/ur/dr/dl/ul): ";
+			//cin >> direction_str;
 			//store direction as an int
-			if (direction_str.compare("u") == 0 || direction_str.compare("U") == 0) direction = 0;
-			else if (direction_str.compare("r") == 0 || direction_str.compare("R") == 0) direction = 1;
-			else if (direction_str.compare("d") == 0 || direction_str.compare("D") == 0) direction = 2;
-			else if (direction_str.compare("l") == 0 || direction_str.compare("L") == 0) direction = 3;
-			else if (direction_str.compare("ur") == 0 || direction_str.compare("UR") == 0) direction = 4;
-			else if (direction_str.compare("dr") == 0 || direction_str.compare("DR") == 0) direction = 5;
-			else if (direction_str.compare("dl") == 0 || direction_str.compare("DL") == 0) direction = 6;
-			else if (direction_str.compare("ul") == 0 || direction_str.compare("UL") == 0) direction = 7;
+			if (direction_str.compare("u") == 0 || direction_str.compare("U") == 0) direction = Board::DIR_UP;
+			else if (direction_str.compare("r") == 0 || direction_str.compare("R") == 0) direction = Board::DIR_RIGHT;
+			else if (direction_str.compare("d") == 0 || direction_str.compare("D") == 0) direction = Board::DIR_DOWN;
+			else if (direction_str.compare("l") == 0 || direction_str.compare("L") == 0) direction = Board::DIR_LEFT;
+			else if (direction_str.compare("ur") == 0 || direction_str.compare("UR") == 0) direction = Board::DIR_UP_RIGHT;
+			else if (direction_str.compare("dr") == 0 || direction_str.compare("DR") == 0) direction = Board::DIR_DOWN_RIGHT;
+			else if (direction_str.compare("dl") == 0 || direction_str.compare("DL") == 0) direction = Board::DIR_DOWN_LEFT;
+			else if (direction_str.compare("ul") == 0 || direction_str.compare("UL") == 0) direction = Board::DIR_UP_LEFT;
 			//check if input for direction is valid
 			if (direction == -1) {
 				cout << "Invalid input for direction, please try again." << endl;
