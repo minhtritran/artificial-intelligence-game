@@ -11,16 +11,50 @@ tuple<int, int, int> getAction();
 int main()
 {
 	bool playerIsBlack = getPlayerChoice();
-	unique_ptr<Board> board(new Board());
+	int currentPlayerPieceValue = playerIsBlack ? Board::TILE_BLACK : Board::TILE_WHITE;
+	unique_ptr<Board> currentBoard(new Board());
+	int gameState = currentBoard->terminalTest();;
 
-	while (true) {
-		board->display();
-		bool validAction = false;
-		while (!validAction) {
-			tuple<int, int, int> action = getAction();
-			validAction = board->playPiece(action, playerIsBlack);
+	//Game loop
+	while (gameState == Board::NOT_TERMINAL_STATE) {
+		currentBoard->display();
+		
+		//Player's turn
+		if ((currentBoard->getCurrentPlayerPieceValue() == Board::TILE_BLACK && playerIsBlack) || 
+			(currentBoard->getCurrentPlayerPieceValue() == Board::TILE_WHITE && !playerIsBlack))
+		{
+			bool validAction = false;
+			while (!validAction) {
+				tuple<int, int, int> action = getAction();
+				unique_ptr<Board> nextBoard(currentBoard->playPieceResult(action));
+				if (nextBoard) {
+					validAction = true;
+					currentBoard = move(nextBoard);
+				}
+				else {
+					validAction = false;
+					cout << "Illegal move." << endl;
+				}
+			}
 		}
+		//AI's turn
+		else {
+			//TO DO
+			cout << "Doot doot doot, AI makes a move." << endl;
+			unique_ptr<Board> nextBoard(currentBoard->playPieceResult(currentBoard->getValidActions()[0]));
+			currentBoard = move(nextBoard);
+		}
+
+		gameState = currentBoard->terminalTest();
 	}
+
+	//Show winning/losing board along with a statement
+	currentBoard->display();
+	if (gameState == Board::UTILITY_BLACK_WINS && playerIsBlack) cout << "You (Black) win! Congraluations!" << endl;
+	else if (gameState == Board::UTILITY_BLACK_WINS && !playerIsBlack) cout << "You (Black) lost..." << endl;
+	else if (gameState == Board::UTILITY_WHITE_WINS && playerIsBlack) cout << "You (White) lost..." << endl;
+	else if (gameState == Board::UTILITY_WHITE_WINS && !playerIsBlack) cout << "You (White) win! Congraluations!" << endl;
+	else if (gameState == Board::UTILITY_DRAW) cout << "No one has won.  Draw." << endl;
 
 	return 0;
 }

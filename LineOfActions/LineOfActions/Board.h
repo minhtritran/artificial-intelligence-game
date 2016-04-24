@@ -17,17 +17,31 @@ public:
 	const static int DIR_DOWN_RIGHT = 5;
 	const static int DIR_DOWN_LEFT = 6;
 	const static int DIR_UP_LEFT = 7;
+	const static int NOT_TERMINAL_STATE = -9999;
+	const static int UTILITY_WHITE_WINS = -100;
+	const static int UTILITY_BLACK_WINS = 100;
+	const static int UTILITY_DRAW = 0;
 	const static int NUM_ROWS = 5;
 	const static int NUM_COLUMNS = 5;
+	const static int NUM_DIRECTIONS = 8;
 
 	Board();
+	Board(int currentPlayerPieceValue, int data[][NUM_COLUMNS]);
 	int getTile(const int row, const int col);
+	int getCurrentPlayerPieceValue();
+	vector<tuple<int, int, int>> getValidActions();
 	void setTile(const int row, const int col, const int value);
 	void display();
-	bool playPiece(const tuple<int, int, int>& action, const bool playAsBlack);
+	unique_ptr<Board> playPieceResult(const tuple<int, int, int>& action);
+	int terminalTest();
 private:
 	int data[NUM_ROWS][NUM_COLUMNS];
+	int currentPlayerPieceValue;
+	vector<tuple<int, int, int>> validActions;
 
+	void initializeValidActions();
 	int countLine(const tuple<int, int, int>& action);
-	tuple<bool, string> checkIfEnemyPieceInWay(const int startRow, const int startCol, const int destRow, const int destCol, const int pieceValue);
+	tuple<bool, string> checkIfEnemyPieceInWay(const int startRow, const int startCol, const int destRow, const int destCol);
+	bool checkContiguousBody(const int pieceValue);
+	tuple<int, int> findAnyOneLocationOfPiece(const int pieceValue);
 };
