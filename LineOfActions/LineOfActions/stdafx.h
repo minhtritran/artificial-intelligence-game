@@ -17,4 +17,5 @@
 #include <vector>
 #include <memory>
 #include <algorithm>
+#include "limits.h"
 #include "Board.h"

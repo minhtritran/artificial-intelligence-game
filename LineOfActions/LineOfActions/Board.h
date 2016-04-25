@@ -21,15 +21,17 @@ public:
 	const static int UTILITY_WHITE_WINS = -100;
 	const static int UTILITY_BLACK_WINS = 100;
 	const static int UTILITY_DRAW = 0;
+	const static int UTILITY_FILLER_VALUE = -1;
 	const static int NUM_ROWS = 5;
 	const static int NUM_COLUMNS = 5;
 	const static int NUM_DIRECTIONS = 8;
 
 	Board();
 	Board(int currentPlayerPieceValue, int data[][NUM_COLUMNS]);
+	friend bool operator==(const Board& lhs, const Board& rhs);
 	int getTile(const int row, const int col);
 	int getCurrentPlayerPieceValue();
-	vector<tuple<int, int, int>> getValidActions();
+	vector<tuple<tuple<int, int, int>, int>> getValidActions();
 	void setTile(const int row, const int col, const int value);
 	void display();
 	unique_ptr<Board> playPieceResult(const tuple<int, int, int>& action);
@@ -37,7 +39,7 @@ public:
 private:
 	int data[NUM_ROWS][NUM_COLUMNS];
 	int currentPlayerPieceValue;
-	vector<tuple<int, int, int>> validActions;
+	vector<tuple<tuple<int, int, int>, int>> validActions;
 
 	void initializeValidActions();
 	int countLine(const tuple<int, int, int>& action);

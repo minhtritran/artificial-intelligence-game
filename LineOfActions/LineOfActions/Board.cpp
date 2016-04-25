@@ -4,27 +4,34 @@ using namespace std;
 
 //Set up initial board
 Board::Board() {
-	//Make every tile empty
-	for (int row = 0; row < NUM_ROWS; row++) {
-		for (int col = 0; col < NUM_COLUMNS; col++) {
-			data[row][col] = TILE_EMPTY;
-		}
-	}
-	//Set up white pieces
-	for (int row = 1; row < NUM_COLUMNS - 1; row++) {
-		data[row][0] = TILE_WHITE;
-	}
-	for (int row = 1; row < NUM_COLUMNS - 1; row++) {
-		data[row][NUM_COLUMNS - 1] = TILE_WHITE;
-	}
-	
-	//Set up black pieces
-	for (int col = 1; col < NUM_ROWS - 1; col++) {
-		data[0][col] = TILE_BLACK;
-	}
-	for (int col = 1; col < NUM_ROWS - 1; col++) {
-		data[NUM_ROWS - 1][col] = TILE_BLACK;
-	}
+	////Make every tile empty
+	//for (int row = 0; row < NUM_ROWS; row++) {
+	//	for (int col = 0; col < NUM_COLUMNS; col++) {
+	//		data[row][col] = TILE_EMPTY;
+	//	}
+	//}
+	////Set up white pieces
+	//for (int row = 1; row < NUM_COLUMNS - 1; row++) {
+	//	data[row][0] = TILE_WHITE;
+	//}
+	//for (int row = 1; row < NUM_COLUMNS - 1; row++) {
+	//	data[row][NUM_COLUMNS - 1] = TILE_WHITE;
+	//}
+	//
+	////Set up black pieces
+	//for (int col = 1; col < NUM_ROWS - 1; col++) {
+	//	data[0][col] = TILE_BLACK;
+	//}
+	//for (int col = 1; col < NUM_ROWS - 1; col++) {
+	//	data[NUM_ROWS - 1][col] = TILE_BLACK;
+	//}
+
+	data[0][0] = TILE_BLACK;
+	data[0][3] = TILE_BLACK;
+	data[2][1] = TILE_WHITE;
+	data[0][2] = TILE_WHITE;
+	data[0][4] = TILE_BLACK;
+	data[0][3] = TILE_WHITE;
 
 	currentPlayerPieceValue = TILE_BLACK; //Black starts first
 	initializeValidActions();
@@ -37,6 +44,18 @@ Board::Board(int currentPlayerPieceValue, int data[][NUM_COLUMNS]) : currentPlay
 			this->data[row][col] = data[row][col];
 		}
 	}
+}
+
+bool operator==(const Board & lhs, const Board & rhs)
+{
+	for (int row = 0; row < Board::NUM_ROWS; row++) {
+		for (int col = 0; col < Board::NUM_COLUMNS; col++) {
+			if (lhs.data[row][col] != rhs.data[row][col]) return false;
+		}
+	}
+	if (lhs.currentPlayerPieceValue != rhs.currentPlayerPieceValue) return false;
+
+	return true;
 }
 
 //Get tile value at grid position
@@ -52,7 +71,7 @@ int Board::getCurrentPlayerPieceValue() {
 	return currentPlayerPieceValue;
 }
 
-vector<tuple<int, int, int>> Board::getValidActions() {
+vector<tuple<tuple<int, int, int>, int>> Board::getValidActions() {
 	return validActions;
 }
 
@@ -95,7 +114,15 @@ unique_ptr<Board> Board::playPieceResult(const tuple<int, int, int>& action) {
 	int direction = get<2>(action);
 
 	//Return a null board if action is not valid
-	if (find(validActions.begin(), validActions.end(), action) == validActions.end()) {
+	bool validAction = false;
+	for (auto it = validActions.begin(); it != validActions.end(); it++) {
+		tuple<int, int, int> currentAction = get<0>(*it);
+		if (currentAction == action) {
+			validAction = true;
+			break;
+		}
+	}
+	if (!validAction) {
 		unique_ptr<Board> nullReturn(nullptr);
 		return nullReturn;
 	}
@@ -233,7 +260,7 @@ void Board::initializeValidActions() {
 						continue;
 					}
 					
-					validActions.push_back(currentAction);
+					validActions.push_back(make_tuple(currentAction, UTILITY_FILLER_VALUE));
 				}
 			}
 		}
