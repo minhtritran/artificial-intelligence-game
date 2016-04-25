@@ -122,10 +122,10 @@ tuple<int, int, int> getAction() {
 tuple<int, int, int> alphaBetaSearch(shared_ptr<Board> board) {
 	vector<tuple<tuple<int, int, int>, int>> actions = board->getValidActions();
 	int v = maxValue(move(board), Board::UTILITY_WHITE_WINS, Board::UTILITY_BLACK_WINS, 0);
-	for (auto it = actions.begin(); it != actions.end(); it++) {
+	/*for (auto it = actions.begin(); it != actions.end(); it++) {
 		if (get<1>(*it) == v) return get<0>(*it);
-	}
-	//return get<0>(*actions.begin());
+	}*/
+	return get<0>(*actions.begin());
 }
 
 int maxValue(shared_ptr<Board> board, int alpha, int beta, int depth) {
@@ -140,7 +140,6 @@ int maxValue(shared_ptr<Board> board, int alpha, int beta, int depth) {
 	vector<tuple<tuple<int, int, int>, int>> actions = board->getValidActions();
 	for (auto it = actions.begin(); it != actions.end(); it++) {
 		v = max(v, minValue(move(board->playPieceResult(get<0>(*it))), alpha, beta, depth + 1));
-		get<1>(*it) = v;
 		if (v >= beta) return v;
 		alpha = max(alpha, v);
 	}
@@ -158,7 +157,6 @@ int minValue(shared_ptr<Board> board, int alpha, int beta, int depth) {
 	vector<tuple<tuple<int, int, int>, int>> actions = board->getValidActions();
 	for (auto it = actions.begin(); it != actions.end(); it++) {
 		v = min(v, maxValue(move(board->playPieceResult(get<0>(*it))), alpha, beta, depth + 1));
-		get<1>(*it) = v;
 		if (v <= alpha) return v;
 		beta = min(beta, v);
 	}

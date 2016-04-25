@@ -31,7 +31,7 @@ Board::Board() {
 	data[2][1] = TILE_WHITE;
 	data[0][2] = TILE_WHITE;
 	data[0][4] = TILE_BLACK;
-	data[0][3] = TILE_WHITE;
+	data[4][4] = TILE_WHITE;
 
 	currentPlayerPieceValue = TILE_BLACK; //Black starts first
 	initializeValidActions();
@@ -206,7 +206,9 @@ void Board::initializeValidActions() {
 				for (int direction = 0; direction < NUM_DIRECTIONS; direction++) {
 					tuple<int, int, int> currentAction = make_tuple(row, col, direction);
 					int numTilesOnLine = countLine(currentAction);
-					int destRow, destCol, destValue;
+					int destRow = -1;
+					int destCol = -1;
+					int destValue = -1;
 					switch (direction) {
 					case DIR_UP:
 						destRow = row - numTilesOnLine;
@@ -243,12 +245,10 @@ void Board::initializeValidActions() {
 					}
 
 					//Check if destination is outside of board bounds
-					try {
-						destValue = getTile(destRow, destCol);
-					}
-					catch (const invalid_argument& e) {
+					if (destRow < 0 || destRow >= NUM_ROWS || destCol < 0 || destCol >= NUM_COLUMNS) {
 						continue;
 					}
+
 					//Check if the destination tile contains your own piece
 					if (destValue == currentPlayerPieceValue) {
 						continue;
