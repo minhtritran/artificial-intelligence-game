@@ -5,6 +5,15 @@
 
 using namespace std;
 
+const int DEPTH_CUTOFF = 4;
+
+int maxDepth = 0;
+int numNodesGenerated = 0;
+int numTimesEvalCalledMax = 0;
+int numTimesEvalCalledMin = 0;
+int numTimesPruneMax = 0;
+int numTimesPruneMin = 0;
+
 bool getPlayerChoice();
 tuple<int, int, int> getAction();
 tuple<int, int, int> alphaBetaSearch(shared_ptr<Board> board);
@@ -13,10 +22,10 @@ int minValue(shared_ptr<Board> board, int alpha, int beta, int depth);
 
 int main()
 {
-	bool playerIsBlack = getPlayerChoice();
-	int currentPlayerPieceValue = playerIsBlack ? Board::TILE_BLACK : Board::TILE_WHITE;
+	Board::playerIsBlack = getPlayerChoice();
+	int currentPlayerPieceValue = Board::playerIsBlack ? Board::TILE_BLACK : Board::TILE_WHITE;
 	shared_ptr<Board> currentBoard(new Board());
-	int gameState = currentBoard->terminalTest();;
+	int gameState = currentBoard->terminalTest();
 
 	//Game loop
 	while (gameState == Board::NOT_TERMINAL_STATE) {
@@ -24,8 +33,8 @@ int main()
 		unique_ptr<Board> nextBoard(nullptr);
 
 		//Player's turn
-		if ((currentBoard->getCurrentPlayerPieceValue() == Board::TILE_BLACK && playerIsBlack) || 
-			(currentBoard->getCurrentPlayerPieceValue() == Board::TILE_WHITE && !playerIsBlack))
+		if ((currentBoard->getCurrentPlayerPieceValue() == Board::TILE_BLACK && Board::playerIsBlack) ||
+			(currentBoard->getCurrentPlayerPieceValue() == Board::TILE_WHITE && !Board::playerIsBlack))
 		{
 			while (!nextBoard) {
 				tuple<int, int, int> action = getAction();
@@ -38,7 +47,7 @@ int main()
 		//AI's turn
 		else {
 			//TO DO
-			cout << "Doot doot doot, AI makes a move." << endl;
+			cout << "Doot doot doot, AI deciding on a move." << endl;
 			tuple<int, int, int> action = alphaBetaSearch(currentBoard);
 			nextBoard = move(currentBoard->playPieceResult(action));
 		}
@@ -49,10 +58,8 @@ int main()
 
 	//Show winning/losing board along with a statement
 	currentBoard->display();
-	if (gameState == Board::UTILITY_BLACK_WINS && playerIsBlack) cout << "You (Black) win! Congraluations!" << endl;
-	else if (gameState == Board::UTILITY_BLACK_WINS && !playerIsBlack) cout << "You (White) lost..." << endl;
-	else if (gameState == Board::UTILITY_WHITE_WINS && playerIsBlack) cout << "You (Black) lost..." << endl;
-	else if (gameState == Board::UTILITY_WHITE_WINS && !playerIsBlack) cout << "You (White) win! Congraluations!" << endl;
+	if (gameState == Board::UTILITY_MIN) cout << "You won! Congraluations!" << endl;
+	else if (gameState == Board::UTILITY_MAX) cout << "You lost..." << endl;
 	else if (gameState == Board::UTILITY_DRAW) cout << "No one has won.  Draw." << endl;
 
 	return 0;
@@ -120,45 +127,87 @@ tuple<int, int, int> getAction() {
 }
 
 tuple<int, int, int> alphaBetaSearch(shared_ptr<Board> board) {
-	vector<tuple<tuple<int, int, int>, int>> actions = board->getValidActions();
-	int v = maxValue(move(board), Board::UTILITY_WHITE_WINS, Board::UTILITY_BLACK_WINS, 0);
-	/*for (auto it = actions.begin(); it != actions.end(); it++) {
-		if (get<1>(*it) == v) return get<0>(*it);
-	}*/
-	return get<0>(*actions.begin());
+	maxDepth = 0;
+	numNodesGenerated = 1;
+	numTimesEvalCalledMax = 0;
+	numTimesEvalCalledMin = 0;
+	numTimesPruneMax = 0;
+	numTimesPruneMin = 0;
+
+	tuple<int, int, int> bestAction;
+	int v = INT_MIN;
+	int alpha = INT_MIN;
+	int depth = 0;
+	vector<tuple<int, int, int>> actions = board->getValidActions();
+	for (auto it = actions.begin(); it != actions.end(); it++) {
+		v = max(v, minValue(move(board->playPieceResult(*it)), alpha, INT_MAX, depth + 1));
+		if (v > alpha) {
+			alpha = v;
+			bestAction = *it;
+		}
+	}
+
+	cout << "Max depth: " << maxDepth << endl;
+	cout << "Total # of nodes generated: " << numNodesGenerated << endl;
+	cout << "# of times evaluate() was called in MAX-VALUE function: " << numTimesEvalCalledMax << endl;
+	cout << "# of times evaluate() was called in MIN-VALUE function: " << numTimesEvalCalledMin << endl;
+	cout << "# of times pruning occured in MAX-VALUE function: " << numTimesPruneMax << endl;
+	cout << "# of times pruning occured in MIN-VALUE function: " << numTimesPruneMin << endl;
+
+	return bestAction;
 }
 
 int maxValue(shared_ptr<Board> board, int alpha, int beta, int depth) {
-	cout << depth << endl;
+	numNodesGenerated++;
+	maxDepth = max(depth, maxDepth);
+
 	int utility = board->terminalTest();
 	if (utility != Board::NOT_TERMINAL_STATE) {
 		return utility;
 	}
 
-	//if cutoff test is true, then return eval(board)
+	if (depth >= DEPTH_CUTOFF) {
+		numTimesEvalCalledMax++;
+		return board->evaluate();
+	}
+
 	int v = INT_MIN;
-	vector<tuple<tuple<int, int, int>, int>> actions = board->getValidActions();
+	vector<tuple<int, int, int>> actions = board->getValidActions();
 	for (auto it = actions.begin(); it != actions.end(); it++) {
-		v = max(v, minValue(move(board->playPieceResult(get<0>(*it))), alpha, beta, depth + 1));
-		if (v >= beta) return v;
+		v = max(v, minValue(move(board->playPieceResult(*it)), alpha, beta, depth + 1));
+		if (v >= beta) {
+			numTimesPruneMax++;
+			return v;
+		}
 		alpha = max(alpha, v);
 	}
 	return v;
 }
 
 int minValue(shared_ptr<Board> board, int alpha, int beta, int depth) {
-	cout << depth << endl;
+	numNodesGenerated++;
+	maxDepth = max(depth, maxDepth);
+
 	int utility = board->terminalTest();
 	if (utility != Board::NOT_TERMINAL_STATE) {
 		return utility;
 	}
 
+	if (depth >= DEPTH_CUTOFF) {
+		numTimesEvalCalledMin++;
+		return board->evaluate();
+	}
+
 	int v = INT_MAX;
-	vector<tuple<tuple<int, int, int>, int>> actions = board->getValidActions();
+	vector<tuple<int, int, int>> actions = board->getValidActions();
 	for (auto it = actions.begin(); it != actions.end(); it++) {
-		v = min(v, maxValue(move(board->playPieceResult(get<0>(*it))), alpha, beta, depth + 1));
-		if (v <= alpha) return v;
+		v = min(v, maxValue(move(board->playPieceResult(*it)), alpha, beta, depth + 1));
+		if (v <= alpha) {
+			numTimesPruneMin++;
+			return v;
+		}
 		beta = min(beta, v);
 	}
+
 	return v;
 }

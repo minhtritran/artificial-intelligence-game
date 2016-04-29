@@ -2,36 +2,38 @@
 
 using namespace std;
 
+bool Board::playerIsBlack = false;
+
 //Set up initial board
 Board::Board() {
-	////Make every tile empty
-	//for (int row = 0; row < NUM_ROWS; row++) {
-	//	for (int col = 0; col < NUM_COLUMNS; col++) {
-	//		data[row][col] = TILE_EMPTY;
-	//	}
-	//}
-	////Set up white pieces
-	//for (int row = 1; row < NUM_COLUMNS - 1; row++) {
-	//	data[row][0] = TILE_WHITE;
-	//}
-	//for (int row = 1; row < NUM_COLUMNS - 1; row++) {
-	//	data[row][NUM_COLUMNS - 1] = TILE_WHITE;
-	//}
-	//
-	////Set up black pieces
-	//for (int col = 1; col < NUM_ROWS - 1; col++) {
-	//	data[0][col] = TILE_BLACK;
-	//}
-	//for (int col = 1; col < NUM_ROWS - 1; col++) {
-	//	data[NUM_ROWS - 1][col] = TILE_BLACK;
-	//}
+	//Make every tile empty
+	for (int row = 0; row < NUM_ROWS; row++) {
+		for (int col = 0; col < NUM_COLUMNS; col++) {
+			data[row][col] = TILE_EMPTY;
+		}
+	}
+	//Set up white pieces
+	for (int row = 1; row < NUM_COLUMNS - 1; row++) {
+		data[row][0] = TILE_WHITE;
+	}
+	for (int row = 1; row < NUM_COLUMNS - 1; row++) {
+		data[row][NUM_COLUMNS - 1] = TILE_WHITE;
+	}
+	
+	//Set up black pieces
+	for (int col = 1; col < NUM_ROWS - 1; col++) {
+		data[0][col] = TILE_BLACK;
+	}
+	for (int col = 1; col < NUM_ROWS - 1; col++) {
+		data[NUM_ROWS - 1][col] = TILE_BLACK;
+	}
 
-	data[0][0] = TILE_BLACK;
-	data[0][3] = TILE_BLACK;
-	data[2][1] = TILE_WHITE;
-	data[0][2] = TILE_WHITE;
-	data[0][4] = TILE_BLACK;
-	data[4][4] = TILE_WHITE;
+	/*data[0][0] = TILE_BLACK;
+	data[2][0] = TILE_BLACK;
+	data[0][2] = TILE_BLACK;
+	data[1][3] = TILE_WHITE;
+	data[2][2] = TILE_BLACK;
+	data[3][4] = TILE_WHITE;*/
 
 	currentPlayerPieceValue = TILE_BLACK; //Black starts first
 	initializeValidActions();
@@ -71,7 +73,7 @@ int Board::getCurrentPlayerPieceValue() {
 	return currentPlayerPieceValue;
 }
 
-vector<tuple<tuple<int, int, int>, int>> Board::getValidActions() {
+vector<tuple<int, int, int>> Board::getValidActions() {
 	return validActions;
 }
 
@@ -116,7 +118,7 @@ unique_ptr<Board> Board::playPieceResult(const tuple<int, int, int>& action) {
 	//Return a null board if action is not valid
 	bool validAction = false;
 	for (auto it = validActions.begin(); it != validActions.end(); it++) {
-		tuple<int, int, int> currentAction = get<0>(*it);
+		tuple<int, int, int> currentAction = *it;
 		if (currentAction == action) {
 			validAction = true;
 			break;
@@ -184,18 +186,71 @@ unique_ptr<Board> Board::playPieceResult(const tuple<int, int, int>& action) {
 //Check to see if board is in a terminal state
 //If it is, return the appropriate utility value
 int Board::terminalTest() {
+	//AI is always the max player
+	int utilityBlackWins = playerIsBlack ? UTILITY_MIN : UTILITY_MAX;
+	int utilityWhiteWins = playerIsBlack ? UTILITY_MAX : UTILITY_MIN;
+
 	bool blackContiguous = checkContiguousBody(TILE_BLACK);
 	bool whiteContiguous = checkContiguousBody(TILE_WHITE);
 
 	//if both players have contiguous bodies, then the player who made the move wins
 	if (blackContiguous && whiteContiguous) {
-		if (currentPlayerPieceValue == TILE_BLACK) return UTILITY_WHITE_WINS;
-		else return UTILITY_BLACK_WINS;
+		if (currentPlayerPieceValue == TILE_BLACK) return utilityWhiteWins;
+		else return utilityBlackWins;
 	}
-	else if (blackContiguous) return UTILITY_BLACK_WINS;
-	else if (whiteContiguous) return  UTILITY_WHITE_WINS;
+	else if (blackContiguous) return utilityBlackWins;
+	else if (whiteContiguous) return  utilityWhiteWins;
 	else if (validActions.size() == 0) return UTILITY_DRAW;
 	else return NOT_TERMINAL_STATE;
+}
+
+//Heuristic function that evaluates current board and returns a number in the range of (-100, 100)
+//A position more favorable to the AI would return a number in (0, 100), and the opposite for the human player
+int Board::evaluate() {
+	int blackNumPieces = 0;
+	int whiteNumPieces = 0;
+	int blackHighestNumConnected = 0;
+	int whiteHighestNumConnected = 0;
+	vector<tuple<int, int>> allVisitedTiles;
+	for (int row = 0; row < NUM_ROWS; row++) {
+		for (int col = 0; col < NUM_COLUMNS; col++) {
+			if (data[row][col] == TILE_BLACK) {
+				blackNumPieces++;
+				if (find(allVisitedTiles.begin(), allVisitedTiles.end(), make_tuple(row, col)) != allVisitedTiles.end()) continue;
+				vector<tuple<int, int>> bfsVisited = bfsExplore(make_tuple(row, col), TILE_BLACK);
+				blackHighestNumConnected = max(blackHighestNumConnected, (int)bfsVisited.size());
+				allVisitedTiles.insert(allVisitedTiles.end(), bfsVisited.begin(), bfsVisited.end());
+			}
+			if (data[row][col] == TILE_WHITE) {
+				whiteNumPieces++;
+				if (find(allVisitedTiles.begin(), allVisitedTiles.end(), make_tuple(row, col)) != allVisitedTiles.end()) continue;
+				vector<tuple<int, int>> bfsVisited = bfsExplore(make_tuple(row, col), TILE_WHITE);
+				whiteHighestNumConnected = max(whiteHighestNumConnected, (int)bfsVisited.size());
+				allVisitedTiles.insert(allVisitedTiles.end(), bfsVisited.begin(), bfsVisited.end());
+			}
+		}
+	}
+
+	float blackPoints = UTILITY_MAX - 1;
+	if (blackNumPieces != 0) {
+		float blackPointsFromConnection = ((float)blackHighestNumConnected / (float)blackNumPieces) * (0.75f * UTILITY_MAX);
+		float blackPointsFromNumPieces = (1.0f / (float)blackNumPieces) * (0.24f * UTILITY_MAX);
+		blackPoints = blackPointsFromConnection + blackPointsFromNumPieces;
+	}
+	float whitePoints = UTILITY_MAX - 1;
+	if (whiteNumPieces != 0) {
+		float whitePointsFromConnection = ((float)whiteHighestNumConnected / (float)whiteNumPieces) * (0.75f * UTILITY_MAX);
+		float whitePointsFromNumPieces = (1.0f / (float)whiteNumPieces) * (0.24f * UTILITY_MAX);
+		whitePoints = whitePointsFromConnection + whitePointsFromNumPieces;
+	}
+
+	//AI is the max player
+	if (playerIsBlack) {
+		return whitePoints - blackPoints;
+	}
+	else {
+		return blackPoints - whitePoints;
+	}
 }
 
 //Initialize the vector of valid actions based on the current board and the current player
@@ -250,6 +305,7 @@ void Board::initializeValidActions() {
 					}
 
 					//Check if the destination tile contains your own piece
+					destValue = getTile(destRow, destCol);
 					if (destValue == currentPlayerPieceValue) {
 						continue;
 					}
@@ -260,7 +316,7 @@ void Board::initializeValidActions() {
 						continue;
 					}
 					
-					validActions.push_back(make_tuple(currentAction, UTILITY_FILLER_VALUE));
+					validActions.push_back(currentAction);
 				}
 			}
 		}
@@ -378,19 +434,36 @@ bool Board::checkContiguousBody(const int pieceValue) {
 	//a body made of no pieces is contiguous
 	if (get<0>(firstPiece) == -1 && get<1>(firstPiece) == -1) return true;
 
+	int visitedSize = bfsExplore(firstPiece, pieceValue).size();
+	
+	//get total number of pieces on board with the given value
+	int numPieces = 0;
+	for (int row = 0; row < NUM_ROWS; row++) {
+		for (int col = 0; col < NUM_COLUMNS; col++) {
+			if (data[row][col] == pieceValue) numPieces++;
+		}
+	}
+
+	//if all pieces were visited, that means they are in one contiguous body
+	if (numPieces == visitedSize) return true;
+	else return false;
+}
+
+//Explore the given start tile and return the visited set
+vector<tuple<int,int>> Board::bfsExplore(tuple<int, int> startTile, int pieceValue) {
 	queue<tuple<int, int>> bfsQueue;
 	vector<tuple<int, int>> bfsVisited;
-	bfsQueue.push(firstPiece);
+	bfsQueue.push(startTile);
 
 	tuple<int, int> currentPiece;
 	int row, col;
 	while (!bfsQueue.empty()) {
 		currentPiece = bfsQueue.front();
 		bfsQueue.pop();
-		
+
 		//already visited
 		if (find(bfsVisited.begin(), bfsVisited.end(), currentPiece) != bfsVisited.end()) continue;
-		
+
 		bfsVisited.push_back(currentPiece);
 
 		//Add neighboring same-value pieces to queue
@@ -405,18 +478,8 @@ bool Board::checkContiguousBody(const int pieceValue) {
 		if (row + 1 < NUM_ROWS && col - 1 >= 0 && data[row + 1][col - 1] == pieceValue) bfsQueue.push(make_tuple(row + 1, col - 1)); //down left
 		if (col - 1 >= 0 && data[row][col - 1] == pieceValue) bfsQueue.push(make_tuple(row, col - 1)); //left
 	}
-	
-	//get total number of pieces on board with the given value
-	int numPieces = 0;
-	for (int row = 0; row < NUM_ROWS; row++) {
-		for (int col = 0; col < NUM_COLUMNS; col++) {
-			if (data[row][col] == pieceValue) numPieces++;
-		}
-	}
 
-	//if all pieces were visited, that means they are in one contiguous body
-	if (numPieces == bfsVisited.size()) return true;
-	else return false;
+	return bfsVisited;
 }
 
 //Find any piece of the given value and return its location 
