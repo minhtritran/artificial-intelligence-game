@@ -5,53 +5,67 @@ using namespace std;
 bool Board::playerIsBlack = false;
 
 //Set up initial board
-Board::Board() {
+Board::Board(int boardSize) {
+	numRows = boardSize;
+	numColumns = boardSize;
+	data = new int*[numRows];
+	for (int i = 0; i < numRows; ++i)
+		data[i] = new int[numColumns];
+
 	//Make every tile empty
-	for (int row = 0; row < NUM_ROWS; row++) {
-		for (int col = 0; col < NUM_COLUMNS; col++) {
+	for (int row = 0; row < numRows; row++) {
+		for (int col = 0; col < numColumns; col++) {
 			data[row][col] = TILE_EMPTY;
 		}
 	}
 	//Set up white pieces
-	for (int row = 1; row < NUM_COLUMNS - 1; row++) {
+	for (int row = 1; row < numColumns - 1; row++) {
 		data[row][0] = TILE_WHITE;
 	}
-	for (int row = 1; row < NUM_COLUMNS - 1; row++) {
-		data[row][NUM_COLUMNS - 1] = TILE_WHITE;
+	for (int row = 1; row < numColumns - 1; row++) {
+		data[row][numColumns - 1] = TILE_WHITE;
 	}
 	
 	//Set up black pieces
-	for (int col = 1; col < NUM_ROWS - 1; col++) {
+	for (int col = 1; col < numRows - 1; col++) {
 		data[0][col] = TILE_BLACK;
 	}
-	for (int col = 1; col < NUM_ROWS - 1; col++) {
-		data[NUM_ROWS - 1][col] = TILE_BLACK;
+	for (int col = 1; col < numRows - 1; col++) {
+		data[numRows - 1][col] = TILE_BLACK;
 	}
-
-	/*data[0][0] = TILE_BLACK;
-	data[2][0] = TILE_BLACK;
-	data[0][2] = TILE_BLACK;
-	data[1][3] = TILE_WHITE;
-	data[2][2] = TILE_BLACK;
-	data[3][4] = TILE_WHITE;*/
 
 	currentPlayerPieceValue = TILE_BLACK; //Black starts first
 	initializeValidActions();
 }
 
 //Initialize board with data
-Board::Board(int currentPlayerPieceValue, int data[][NUM_COLUMNS]) : currentPlayerPieceValue(currentPlayerPieceValue) {
-	for (int row = 0; row < NUM_ROWS; row++) {
-		for (int col = 0; col < NUM_COLUMNS; col++) {
+Board::Board(int boardSize, int currentPlayerPieceValue, int** data) : currentPlayerPieceValue(currentPlayerPieceValue) {
+	numRows = boardSize;
+	numColumns = boardSize;
+	this->data = new int*[numRows];
+	for (int i = 0; i < numRows; ++i)
+		this->data[i] = new int[numColumns];
+
+
+	for (int row = 0; row < numRows; row++) {
+		for (int col = 0; col < numColumns; col++) {
 			this->data[row][col] = data[row][col];
 		}
 	}
 }
 
+//Destructor
+Board::~Board() {
+	for (int i = 0; i < numRows; ++i)
+		delete[] data[i];
+	delete[] data;
+}
+
+//Overloaded == operator to determine if two boards are the same
 bool operator==(const Board & lhs, const Board & rhs)
 {
-	for (int row = 0; row < Board::NUM_ROWS; row++) {
-		for (int col = 0; col < Board::NUM_COLUMNS; col++) {
+	for (int row = 0; row < lhs.numRows; row++) {
+		for (int col = 0; col < lhs.numColumns; col++) {
 			if (lhs.data[row][col] != rhs.data[row][col]) return false;
 		}
 	}
@@ -62,10 +76,20 @@ bool operator==(const Board & lhs, const Board & rhs)
 
 //Get tile value at grid position
 int Board::getTile(const int row, const int col) {
-	if (row < 0 || row >= NUM_ROWS || col < 0 || col >= NUM_COLUMNS) {
+	if (row < 0 || row >= numRows || col < 0 || col >= numColumns) {
 		throw invalid_argument("Get Tile out of range");
 	}
 	return data[row][col];
+}
+
+//Get number of rows
+int Board::getNumRows() {
+	return numRows;
+}
+
+//Get number of columns
+int Board::getNumColumns() {
+	return numColumns;
 }
 
 //Get current player piece value
@@ -79,7 +103,7 @@ vector<tuple<int, int, int>> Board::getValidActions() {
 
 //Set tile value at grid position
 void Board::setTile(const int row, const int col, const int value) {
-	if (row < 0 || row >= NUM_ROWS || col < 0 || col >= NUM_COLUMNS) {
+	if (row < 0 || row >= numRows || col < 0 || col >= numColumns) {
 		throw invalid_argument("Set Tile out of range");
 	}
 	if (value < 0 || value > 2) {
@@ -91,9 +115,9 @@ void Board::setTile(const int row, const int col, const int value) {
 //Display the current board with formatting
 void Board::display() {
 	cout << "Current board:" << endl;
-	for (int row = 0; row < NUM_ROWS; row++) {
+	for (int row = 0; row < numRows; row++) {
 		cout << "\t";
-		for (int col = 0; col < NUM_COLUMNS; col++) {
+		for (int col = 0; col < numColumns; col++) {
 			if (data[row][col] == TILE_EMPTY) {
 				cout << "[ ]";
 			}
@@ -167,7 +191,7 @@ unique_ptr<Board> Board::playPieceResult(const tuple<int, int, int>& action) {
 	}
 	
 	int nextPlayerPieceValue = currentPlayerPieceValue == TILE_BLACK ? TILE_WHITE : TILE_BLACK;
-	unique_ptr<Board> newBoard(new Board(nextPlayerPieceValue, data));
+	unique_ptr<Board> newBoard(new Board(numRows, nextPlayerPieceValue, data));
 
 	//Move piece
 	try {
@@ -212,8 +236,8 @@ int Board::evaluate() {
 	int blackHighestNumConnected = 0;
 	int whiteHighestNumConnected = 0;
 	vector<tuple<int, int>> allVisitedTiles;
-	for (int row = 0; row < NUM_ROWS; row++) {
-		for (int col = 0; col < NUM_COLUMNS; col++) {
+	for (int row = 0; row < numRows; row++) {
+		for (int col = 0; col < numColumns; col++) {
 			if (data[row][col] == TILE_BLACK) {
 				blackNumPieces++;
 				if (find(allVisitedTiles.begin(), allVisitedTiles.end(), make_tuple(row, col)) != allVisitedTiles.end()) continue;
@@ -255,8 +279,8 @@ int Board::evaluate() {
 
 //Initialize the vector of valid actions based on the current board and the current player
 void Board::initializeValidActions() {
-	for (int row = 0; row < NUM_ROWS; row++) {
-		for (int col = 0; col < NUM_COLUMNS; col++) {
+	for (int row = 0; row < numRows; row++) {
+		for (int col = 0; col < numColumns; col++) {
 			if (data[row][col] == currentPlayerPieceValue) {
 				for (int direction = 0; direction < NUM_DIRECTIONS; direction++) {
 					tuple<int, int, int> currentAction = make_tuple(row, col, direction);
@@ -300,7 +324,7 @@ void Board::initializeValidActions() {
 					}
 
 					//Check if destination is outside of board bounds
-					if (destRow < 0 || destRow >= NUM_ROWS || destCol < 0 || destCol >= NUM_COLUMNS) {
+					if (destRow < 0 || destRow >= numRows || destCol < 0 || destCol >= numColumns) {
 						continue;
 					}
 
@@ -332,13 +356,13 @@ int Board::countLine(const tuple<int, int, int>& action) {
 	switch (direction) {
 		case DIR_UP:
 		case DIR_DOWN:
-			for (int i = 0; i < NUM_ROWS; i++) {
+			for (int i = 0; i < numRows; i++) {
 				if (data[i][col] != 0) count++;
 			}
 			break;
 		case DIR_RIGHT:
 		case DIR_LEFT:
-			for (int i = 0; i < NUM_COLUMNS; i++) {
+			for (int i = 0; i < numColumns; i++) {
 				if (data[row][i] != 0) count++;
 			}
 			break;
@@ -347,7 +371,7 @@ int Board::countLine(const tuple<int, int, int>& action) {
 			//count tiles (including self) in the down left diagonal direction
 			int tmp_row = row;
 			int tmp_col = col;
-			while (tmp_row < NUM_ROWS && tmp_col >= 0) {
+			while (tmp_row < numRows && tmp_col >= 0) {
 				if (data[tmp_row][tmp_col] != 0) count++;
 				tmp_row++;
 				tmp_col--;
@@ -355,7 +379,7 @@ int Board::countLine(const tuple<int, int, int>& action) {
 			//count tiles (excluding self) in the up right diagonal direction
 			tmp_row = row - 1;
 			tmp_col = col + 1;
-			while (tmp_row >= 0 && tmp_col < NUM_COLUMNS) {
+			while (tmp_row >= 0 && tmp_col < numColumns) {
 				if (data[tmp_row][tmp_col] != 0) count++;
 				tmp_row--;
 				tmp_col++;
@@ -367,7 +391,7 @@ int Board::countLine(const tuple<int, int, int>& action) {
 			//count tiles (including self) in the down right diagonal direction
 			int tmp_row = row;
 			int tmp_col = col;
-			while (tmp_row < NUM_ROWS && tmp_col < NUM_COLUMNS) {
+			while (tmp_row < numRows && tmp_col < numColumns) {
 				if (data[tmp_row][tmp_col] != 0) count++;
 				tmp_row++;
 				tmp_col++;
@@ -438,8 +462,8 @@ bool Board::checkContiguousBody(const int pieceValue) {
 	
 	//get total number of pieces on board with the given value
 	int numPieces = 0;
-	for (int row = 0; row < NUM_ROWS; row++) {
-		for (int col = 0; col < NUM_COLUMNS; col++) {
+	for (int row = 0; row < numRows; row++) {
+		for (int col = 0; col < numColumns; col++) {
 			if (data[row][col] == pieceValue) numPieces++;
 		}
 	}
@@ -471,11 +495,11 @@ vector<tuple<int,int>> Board::bfsExplore(tuple<int, int> startTile, int pieceVal
 		col = get<1>(currentPiece);
 		if (row - 1 >= 0 && col - 1 >= 0 && data[row - 1][col - 1] == pieceValue) bfsQueue.push(make_tuple(row - 1, col - 1)); //up left
 		if (row - 1 >= 0 && data[row - 1][col] == pieceValue) bfsQueue.push(make_tuple(row - 1, col)); //up
-		if (row - 1 >= 0 && col + 1 < NUM_COLUMNS && data[row - 1][col + 1] == pieceValue) bfsQueue.push(make_tuple(row - 1, col + 1)); //up right
-		if (col + 1 < NUM_COLUMNS && data[row][col + 1] == pieceValue) bfsQueue.push(make_tuple(row, col + 1)); //right
-		if (row + 1 < NUM_ROWS && col + 1 < NUM_COLUMNS && data[row + 1][col + 1] == pieceValue) bfsQueue.push(make_tuple(row + 1, col + 1)); //down right
-		if (row + 1 < NUM_ROWS && data[row + 1][col] == pieceValue) bfsQueue.push(make_tuple(row + 1, col)); //down
-		if (row + 1 < NUM_ROWS && col - 1 >= 0 && data[row + 1][col - 1] == pieceValue) bfsQueue.push(make_tuple(row + 1, col - 1)); //down left
+		if (row - 1 >= 0 && col + 1 < numColumns && data[row - 1][col + 1] == pieceValue) bfsQueue.push(make_tuple(row - 1, col + 1)); //up right
+		if (col + 1 < numColumns && data[row][col + 1] == pieceValue) bfsQueue.push(make_tuple(row, col + 1)); //right
+		if (row + 1 < numRows && col + 1 < numColumns && data[row + 1][col + 1] == pieceValue) bfsQueue.push(make_tuple(row + 1, col + 1)); //down right
+		if (row + 1 < numRows && data[row + 1][col] == pieceValue) bfsQueue.push(make_tuple(row + 1, col)); //down
+		if (row + 1 < numRows && col - 1 >= 0 && data[row + 1][col - 1] == pieceValue) bfsQueue.push(make_tuple(row + 1, col - 1)); //down left
 		if (col - 1 >= 0 && data[row][col - 1] == pieceValue) bfsQueue.push(make_tuple(row, col - 1)); //left
 	}
 
@@ -484,8 +508,8 @@ vector<tuple<int,int>> Board::bfsExplore(tuple<int, int> startTile, int pieceVal
 
 //Find any piece of the given value and return its location 
 tuple<int, int> Board::findAnyOneLocationOfPiece(const int pieceValue) {
-	for (int row = 0; row < NUM_ROWS; row++) {
-		for (int col = 0; col < NUM_COLUMNS; col++) {
+	for (int row = 0; row < numRows; row++) {
+		for (int col = 0; col < numColumns; col++) {
 			if (data[row][col] == pieceValue) {
 				return make_tuple(row, col);
 			}

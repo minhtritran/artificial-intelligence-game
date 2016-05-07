@@ -21,14 +21,15 @@ public:
 	const static int UTILITY_MIN = -100;
 	const static int UTILITY_MAX = 100;
 	const static int UTILITY_DRAW = 0;
-	const static int NUM_ROWS = 6;
-	const static int NUM_COLUMNS = 6;
 	const static int NUM_DIRECTIONS = 8;
 	static bool playerIsBlack;
-	Board();
-	Board(int currentPlayerPieceValue, int data[][NUM_COLUMNS]);
+	Board(int boardSize);
+	Board(int boardSize, int currentPlayerPieceValue, int** data);
+	~Board();
 	friend bool operator==(const Board& lhs, const Board& rhs);
 	int getTile(const int row, const int col);
+	int getNumRows();
+	int getNumColumns();
 	int getCurrentPlayerPieceValue();
 	vector<tuple<int, int, int>> getValidActions();
 	void setTile(const int row, const int col, const int value);
@@ -37,7 +38,10 @@ public:
 	int terminalTest();
 	int evaluate();
 private:
-	int data[NUM_ROWS][NUM_COLUMNS];
+	int numRows;
+	int numColumns;
+	int** data;
+	//int data[numRows][numColumns];
 	int currentPlayerPieceValue;
 	vector<tuple<int, int, int>> validActions;
 

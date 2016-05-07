@@ -14,17 +14,19 @@ int numTimesEvalCalledMin = 0;
 int numTimesPruneMax = 0;
 int numTimesPruneMin = 0;
 
+int getBoardSize();
 bool getPlayerChoice();
-tuple<int, int, int> getAction();
+tuple<int, int, int> getAction(shared_ptr<Board> currentBoard);
 tuple<int, int, int> alphaBetaSearch(shared_ptr<Board> board);
 int maxValue(shared_ptr<Board> board, int alpha, int beta, int depth);
 int minValue(shared_ptr<Board> board, int alpha, int beta, int depth);
 
 int main()
 {
+	int boardSize = getBoardSize();
 	Board::playerIsBlack = getPlayerChoice();
 	int currentPlayerPieceValue = Board::playerIsBlack ? Board::TILE_BLACK : Board::TILE_WHITE;
-	shared_ptr<Board> currentBoard(new Board());
+	shared_ptr<Board> currentBoard(new Board(boardSize));
 	int gameState = currentBoard->terminalTest();
 
 	//Game loop
@@ -37,7 +39,7 @@ int main()
 			(currentBoard->getCurrentPlayerPieceValue() == Board::TILE_WHITE && !Board::playerIsBlack))
 		{
 			while (!nextBoard) {
-				tuple<int, int, int> action = getAction();
+				tuple<int, int, int> action = getAction(currentBoard);
 				nextBoard = move(currentBoard->playPieceResult(action));
 				if (!nextBoard) {
 					cout << "Illegal move." << endl;
@@ -65,6 +67,22 @@ int main()
 	return 0;
 }
 
+//Aset player which board size to play on
+int getBoardSize() {
+	int boardSize;
+	cout << "Which board size do you want to play on? (5/6): ";
+	do {
+		cin >> boardSize;
+		if (boardSize == 5 || boardSize == 6) {
+			return boardSize;
+		}
+		else cout << "Invalid input. Try again (5/6): ";
+		cin.clear();
+		cin.ignore(10000, '\n');
+		
+	} while (true);
+}
+
 //Ask player whether he wants to be black or white
 bool getPlayerChoice() {
 	string playerChoice;
@@ -85,7 +103,7 @@ bool getPlayerChoice() {
 } 
 
 //Ask player for his action, and on which piece
-tuple<int, int, int> getAction() {
+tuple<int, int, int> getAction(shared_ptr<Board> currentBoard) {
 	int row, col, direction;
 	bool valid = false;
 	while (!valid) {
@@ -94,11 +112,11 @@ tuple<int, int, int> getAction() {
 		col = -1;
 		direction = -1;
 		string direction_str;
-		cout << "Enter row and column of piece and direction for it to move (0-" << Board::NUM_ROWS - 1 << " 0-" << Board::NUM_COLUMNS - 1;
+		cout << "Enter row and column of piece and direction for it to move (0-" << currentBoard->getNumRows() - 1 << " 0-" << currentBoard->getNumColumns() - 1;
 		cout << " u/r/d/l/ur/dr/dl/ul): ";
 		cin >> row >> col >> direction_str;
 		//check if input for row and column is valid
-		if (row < 0 || col < 0 || row > Board::NUM_ROWS - 1 || col > Board::NUM_COLUMNS - 1) {
+		if (row < 0 || col < 0 || row > currentBoard->getNumRows() - 1 || col > currentBoard->getNumColumns() - 1) {
 			cout << "Invalid input for row/column, please try again." << endl;
 			valid = false;
 		}
@@ -126,6 +144,8 @@ tuple<int, int, int> getAction() {
 	return make_tuple(row, col, direction);
 }
 
+//Entrance point for the alpha-beta pruning AI algorithm
+//Uses a heuristic function to approximate the best action to take if the search tree is too deep
 tuple<int, int, int> alphaBetaSearch(shared_ptr<Board> board) {
 	maxDepth = 0;
 	numNodesGenerated = 1;
@@ -157,6 +177,7 @@ tuple<int, int, int> alphaBetaSearch(shared_ptr<Board> board) {
 	return bestAction;
 }
 
+//Max-value function used for the alpha-beta pruning algorithm
 int maxValue(shared_ptr<Board> board, int alpha, int beta, int depth) {
 	numNodesGenerated++;
 	maxDepth = max(depth, maxDepth);
@@ -184,6 +205,7 @@ int maxValue(shared_ptr<Board> board, int alpha, int beta, int depth) {
 	return v;
 }
 
+//Min-value function used for the alpha-beta pruning algorithm
 int minValue(shared_ptr<Board> board, int alpha, int beta, int depth) {
 	numNodesGenerated++;
 	maxDepth = max(depth, maxDepth);
